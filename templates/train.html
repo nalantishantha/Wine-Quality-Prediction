@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Training Model - Wine Quality Prediction</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="particles-bg" id="particles-js"></div>
+    
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">
+                <i class="fas fa-wine-bottle"></i>
+                <span>Wine Quality Predictor</span>
+            </div>
+            <div class="nav-links">
+                <a href="/">Predict</a>
+                <a href="/train" class="active">Train Model</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="train-container">
+            <div class="train-card">
+                <div class="train-header">
+                    <i class="fas fa-brain train-icon"></i>
+                    <h1>Model Training Center</h1>
+                    <p class="train-subtitle">Train the machine learning model with the latest dataset</p>
+                </div>
+
+                <div class="train-info-section">
+                    <div class="info-banner">
+                        <i class="fas fa-info-circle"></i>
+                        <div>
+                            <h3>About Model Training</h3>
+                            <p>This process will execute the complete ML pipeline including data ingestion, validation, transformation, model training, and evaluation.</p>
+                        </div>
+                    </div>
+
+                    <div class="pipeline-steps">
+                        <h3><i class="fas fa-list-check"></i> Training Pipeline Stages</h3>
+                        <div class="steps-grid">
+                            <div class="step-card">
+                                <div class="step-number">1</div>
+                                <i class="fas fa-download"></i>
+                                <h4>Data Ingestion</h4>
+                                <p>Download and extract wine quality dataset</p>
+                            </div>
+                            <div class="step-card">
+                                <div class="step-number">2</div>
+                                <i class="fas fa-check-double"></i>
+                                <h4>Data Validation</h4>
+                                <p>Validate dataset schema and columns</p>
+                            </div>
+                            <div class="step-card">
+                                <div class="step-number">3</div>
+                                <i class="fas fa-shuffle"></i>
+                                <h4>Data Transformation</h4>
+                                <p>Split data into train and test sets</p>
+                            </div>
+                            <div class="step-card">
+                                <div class="step-number">4</div>
+                                <i class="fas fa-robot"></i>
+                                <h4>Model Training</h4>
+                                <p>Train ElasticNet regression model</p>
+                            </div>
+                            <div class="step-card">
+                                <div class="step-number">5</div>
+                                <i class="fas fa-chart-line"></i>
+                                <h4>Model Evaluation</h4>
+                                <p>Evaluate model performance metrics</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="warning-box">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <div>
+                            <h4>Important Notes:</h4>
+                            <ul>
+                                <li>Training process may take several minutes depending on your system</li>
+                                <li>All existing model files will be replaced with newly trained model</li>
+                                <li>Ensure you have stable internet connection for data ingestion</li>
+                                <li>The browser window should remain open during training</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="train-actions">
+                    <button onclick="startTraining()" class="btn btn-primary btn-large" id="trainBtn">
+                        <i class="fas fa-play"></i>
+                        Start Training
+                    </button>
+                    <a href="/" class="btn btn-secondary">
+                        <i class="fas fa-home"></i>
+                        Back to Home
+                    </a>
+                </div>
+
+                <div class="training-progress" id="trainingProgress" style="display: none;">
+                    <div class="progress-header">
+                        <h3><i class="fas fa-spinner fa-spin"></i> Training in Progress...</h3>
+                        <p>Please wait while the model is being trained</p>
+                    </div>
+                    
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" id="progressBar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                        <div class="progress-text" id="progressText">0%</div>
+                    </div>
+
+                    <div class="current-stage" id="currentStage">
+                        <i class="fas fa-cog fa-spin"></i>
+                        <span>Initializing...</span>
+                    </div>
+
+                    <div class="stage-list" id="stageList">
+                        <div class="stage-item" data-stage="1">
+                            <i class="fas fa-circle"></i>
+                            <span>Data Ingestion</span>
+                        </div>
+                        <div class="stage-item" data-stage="2">
+                            <i class="fas fa-circle"></i>
+                            <span>Data Validation</span>
+                        </div>
+                        <div class="stage-item" data-stage="3">
+                            <i class="fas fa-circle"></i>
+                            <span>Data Transformation</span>
+                        </div>
+                        <div class="stage-item" data-stage="4">
+                            <i class="fas fa-circle"></i>
+                            <span>Model Training</span>
+                        </div>
+                        <div class="stage-item" data-stage="5">
+                            <i class="fas fa-circle"></i>
+                            <span>Model Evaluation</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="training-complete" id="trainingComplete" style="display: none;">
+                    <div class="success-animation">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <h2>Training Complete!</h2>
+                    <p>Your model has been successfully trained and is ready for predictions.</p>
+                    <div class="complete-actions">
+                        <a href="/" class="btn btn-primary">
+                            <i class="fas fa-brain"></i>
+                            Start Predicting
+                        </a>
+                        <button onclick="location.reload()" class="btn btn-secondary">
+                            <i class="fas fa-redo"></i>
+                            Train Again
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p>&copy; 2025 Wine Quality Predictor. Powered by Machine Learning.</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/train.js') }}"></script>
+</body>
+</html>

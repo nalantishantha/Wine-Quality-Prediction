@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error - Wine Quality Prediction</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="particles-bg" id="particles-js"></div>
+    
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">
+                <i class="fas fa-wine-bottle"></i>
+                <span>Wine Quality Predictor</span>
+            </div>
+            <div class="nav-links">
+                <a href="/">Predict</a>
+                <a href="/train-page">Train Model</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="error-container">
+            <div class="error-card">
+                <div class="error-animation">
+                    <i class="fas fa-exclamation-circle"></i>
+                </div>
+                
+                <h1 class="error-title">Oops! Something Went Wrong</h1>
+                <p class="error-message">{{ error_message if error_message else "We encountered an unexpected error while processing your request." }}</p>
+
+                <div class="error-details-box">
+                    <h3><i class="fas fa-info-circle"></i> What happened?</h3>
+                    <p>The application encountered an error during execution. This could be due to:</p>
+                    <ul class="error-reasons">
+                        <li><i class="fas fa-times-circle"></i> Invalid input data or parameters</li>
+                        <li><i class="fas fa-times-circle"></i> Missing or corrupted model files</li>
+                        <li><i class="fas fa-times-circle"></i> Network connectivity issues</li>
+                        <li><i class="fas fa-times-circle"></i> Server configuration problems</li>
+                    </ul>
+                </div>
+
+                <div class="error-suggestions">
+                    <h3><i class="fas fa-lightbulb"></i> What can you do?</h3>
+                    <div class="suggestion-grid">
+                        <div class="suggestion-card">
+                            <i class="fas fa-redo"></i>
+                            <h4>Try Again</h4>
+                            <p>Go back and retry your request with different parameters</p>
+                        </div>
+                        <div class="suggestion-card">
+                            <i class="fas fa-brain"></i>
+                            <h4>Train Model</h4>
+                            <p>If the model is missing, try training it first</p>
+                        </div>
+                        <div class="suggestion-card">
+                            <i class="fas fa-home"></i>
+                            <h4>Start Fresh</h4>
+                            <p>Return to homepage and begin a new prediction</p>
+                        </div>
+                        <div class="suggestion-card">
+                            <i class="fas fa-bug"></i>
+                            <h4>Report Issue</h4>
+                            <p>Contact support if the problem persists</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="error-actions">
+                    <a href="/" class="btn btn-primary">
+                        <i class="fas fa-home"></i>
+                        Go to Homepage
+                    </a>
+                    <a href="/train-page" class="btn btn-secondary">
+                        <i class="fas fa-brain"></i>
+                        Train Model
+                    </a>
+                    <button onclick="history.back()" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i>
+                        Go Back
+                    </button>
+                </div>
+
+                <div class="error-code-box" id="errorCodeBox" style="display: none;">
+                    <div class="code-header" onclick="toggleErrorCode()">
+                        <i class="fas fa-code"></i>
+                        <span>Technical Details</span>
+                        <i class="fas fa-chevron-down" id="chevronIcon"></i>
+                    </div>
+                    <div class="code-content" id="codeContent">
+                        <pre id="errorCodePre">{{ error_details if error_details else "No additional technical details available." }}</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p>&copy; 2025 Wine Quality Predictor. Powered by Machine Learning.</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        // Show error code box if there are details
+        const errorDetails = "{{ error_details if error_details else '' }}";
+        if (errorDetails && errorDetails !== "No additional technical details available.") {
+            document.getElementById('errorCodeBox').style.display = 'block';
+        }
+
+        function toggleErrorCode() {
+            const content = document.getElementById('codeContent');
+            const chevron = document.getElementById('chevronIcon');
+            
+            if (content.style.maxHeight === '0px' || content.style.maxHeight === '') {
+                content.style.maxHeight = content.scrollHeight + 'px';
+                chevron.style.transform = 'rotate(180deg)';
+            } else {
+                content.style.maxHeight = '0px';
+                chevron.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        // Error animation
+        window.addEventListener('load', () => {
+            const errorIcon = document.querySelector('.error-animation i');
+            errorIcon.style.animation = 'shake 0.5s ease';
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prediction Result - Wine Quality</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="particles-bg" id="particles-js"></div>
+    
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">
+                <i class="fas fa-wine-bottle"></i>
+                <span>Wine Quality Predictor</span>
+            </div>
+            <div class="nav-links">
+                <a href="/">Predict</a>
+                <a href="/train-page">Train Model</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="result-container">
+            <div class="result-card">
+                <div class="result-header">
+                    <i class="fas fa-check-circle success-icon"></i>
+                    <h1>Prediction Complete!</h1>
+                </div>
+
+                <div class="result-content">
+                    <div class="quality-display">
+                        <div class="quality-label">Wine Quality Score</div>
+                        <div class="quality-score" id="qualityScore">
+                            {{ prediction }}
+                        </div>
+                        <div class="quality-rating" id="qualityRating"></div>
+                    </div>
+
+                    <div class="result-details">
+                        <div class="detail-card">
+                            <i class="fas fa-star"></i>
+                            <h3>Rating</h3>
+                            <p id="ratingText"></p>
+                        </div>
+                        <div class="detail-card">
+                            <i class="fas fa-chart-bar"></i>
+                            <h3>Performance</h3>
+                            <p id="performanceText"></p>
+                        </div>
+                        <div class="detail-card">
+                            <i class="fas fa-lightbulb"></i>
+                            <h3>Recommendation</h3>
+                            <p id="recommendationText"></p>
+                        </div>
+                    </div>
+
+                    <div class="quality-meter">
+                        <div class="meter-label">Quality Range</div>
+                        <div class="meter-bar">
+                            <div class="meter-fill" id="meterFill"></div>
+                            <div class="meter-pointer" id="meterPointer"></div>
+                        </div>
+                        <div class="meter-labels">
+                            <span>Poor (0-4)</span>
+                            <span>Average (5-6)</span>
+                            <span>Good (7-8)</span>
+                            <span>Excellent (9-10)</span>
+                        </div>
+                    </div>
+
+                    <div class="interpretation">
+                        <h3><i class="fas fa-info-circle"></i> Understanding Your Result</h3>
+                        <div class="interpretation-content" id="interpretationContent"></div>
+                    </div>
+                </div>
+
+                <div class="result-actions">
+                    <a href="/" class="btn btn-primary">
+                        <i class="fas fa-redo"></i>
+                        Make Another Prediction
+                    </a>
+                    <button onclick="window.print()" class="btn btn-secondary">
+                        <i class="fas fa-print"></i>
+                        Print Result
+                    </button>
+                    <button onclick="shareResult()" class="btn btn-secondary">
+                        <i class="fas fa-share-alt"></i>
+                        Share
+                    </button>
+                </div>
+            </div>
+
+            <div class="stats-section">
+                <div class="stat-card">
+                    <i class="fas fa-wine-glass-alt"></i>
+                    <h3>Quality Distribution</h3>
+                    <canvas id="distributionChart"></canvas>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-info"></i>
+                    <h3>Model Information</h3>
+                    <ul class="info-list">
+                        <li><strong>Algorithm:</strong> ElasticNet Regression</li>
+                        <li><strong>Features:</strong> 11 physicochemical properties</li>
+                        <li><strong>Training Data:</strong> Red Wine Dataset</li>
+                        <li><strong>Accuracy:</strong> Optimized for quality prediction</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p>&copy; 2025 Wine Quality Predictor. Powered by Machine Learning.</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Get prediction value
+        const predictionValue = parseFloat("{{ prediction }}".replace('[', '').replace(']', ''));
+        
+        // Update quality score display
+        document.getElementById('qualityScore').textContent = predictionValue.toFixed(2);
+        
+        // Determine quality rating and update UI
+        let rating, performance, recommendation, interpretation, color;
+        
+        if (predictionValue < 4) {
+            rating = "Poor Quality";
+            performance = "Below Average";
+            recommendation = "Not recommended for consumption";
+            interpretation = "This wine has significant quality issues. The physicochemical properties indicate deficiencies that may affect taste, aroma, and overall drinking experience.";
+            color = "#e74c3c";
+        } else if (predictionValue < 5) {
+            rating = "Fair Quality";
+            performance = "Below Average";
+            recommendation = "Consider for everyday use";
+            interpretation = "This wine shows some quality concerns but may be acceptable for casual consumption. Some physicochemical properties could be improved.";
+            color = "#e67e22";
+        } else if (predictionValue < 6) {
+            rating = "Average Quality";
+            performance = "Moderate";
+            recommendation = "Good for everyday drinking";
+            interpretation = "This wine has acceptable quality characteristics. It demonstrates balanced physicochemical properties suitable for regular consumption.";
+            color = "#f39c12";
+        } else if (predictionValue < 7) {
+            rating = "Good Quality";
+            performance = "Above Average";
+            recommendation = "Recommended for most occasions";
+            interpretation = "This wine exhibits good quality with well-balanced physicochemical properties. It should provide a pleasant drinking experience.";
+            color = "#27ae60";
+        } else if (predictionValue < 8) {
+            rating = "Very Good Quality";
+            performance = "Excellent";
+            recommendation = "Highly recommended";
+            interpretation = "This wine shows excellent quality characteristics. The physicochemical analysis indicates superior balance and composition, promising an exceptional taste experience.";
+            color = "#2ecc71";
+        } else {
+            rating = "Exceptional Quality";
+            performance = "Outstanding";
+            recommendation = "Premium wine for special occasions";
+            interpretation = "This wine demonstrates outstanding quality with exceptional physicochemical properties. It represents premium craftsmanship and should deliver an extraordinary sensory experience.";
+            color = "#9b59b6";
+        }
+        
+        document.getElementById('qualityRating').textContent = rating;
+        document.getElementById('ratingText').textContent = rating;
+        document.getElementById('performanceText').textContent = performance;
+        document.getElementById('recommendationText').textContent = recommendation;
+        document.getElementById('interpretationContent').textContent = interpretation;
+        
+        // Update meter
+        const percentage = (predictionValue / 10) * 100;
+        const meterFill = document.getElementById('meterFill');
+        const meterPointer = document.getElementById('meterPointer');
+        
+        meterFill.style.width = percentage + '%';
+        meterFill.style.backgroundColor = color;
+        meterPointer.style.left = percentage + '%';
+        
+        // Create distribution chart
+        const ctx = document.getElementById('distributionChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['0-2', '3-4', '5-6', '7-8', '9-10'],
+                datasets: [{
+                    label: 'Quality Distribution',
+                    data: [5, 15, 45, 30, 5],
+                    backgroundColor: [
+                        '#e74c3c',
+                        '#e67e22',
+                        '#f39c12',
+                        '#27ae60',
+                        '#9b59b6'
+                    ],
+                    borderWidth: 0,
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Percentage (%)'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Quality Score Range'
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Share function
+        function shareResult() {
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Wine Quality Prediction',
+                    text: `My wine quality prediction score is ${predictionValue.toFixed(2)} - ${rating}!`,
+                    url: window.location.href
+                }).catch(err => console.log('Error sharing:', err));
+            } else {
+                alert('Quality Score: ' + predictionValue.toFixed(2) + '\nRating: ' + rating);
+            }
+        }
+    </script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

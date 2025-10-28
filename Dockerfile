@@ -6,4 +6,7 @@ COPY . /app
 
 RUN pip install -r requirements.txt
 
+# Install the package itself so imports work
+RUN pip install -e .
+
 CMD ["python3", "app.py"]

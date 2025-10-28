@@ -114,77 +114,60 @@ jobs:
           echo "✅ Docker image built and pushed to ECR successfully!"
           echo "🚀 You can now deploy this image manually or set up automated deployment"
 
-  # Job 3: Deploy to EC2 (Alternative to ECS - Enable after AWS setup)
-  # IMPORTANT: Uncomment this job after setting up EC2 instance
-  # Run: .\setup-aws.ps1 and choose option 2 for EC2 deployment
-  # Also configure GitHub secrets: EC2_HOST, EC2_USERNAME, EC2_SSH_KEY
-  
-  # deploy-ec2:
-  #   name: Deploy to EC2
-  #   runs-on: ubuntu-latest
-  #   needs: test
-  #   if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-  #   
-  #   steps:
-  #     - name: Checkout Code
-  #       uses: actions/checkout@v3
-  #     
-  #     - name: Configure AWS Credentials
-  #       uses: aws-actions/configure-aws-credentials@v2
-  #       with:
-  #         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  #         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  #         aws-region: ${{ env.AWS_REGION }}
-  #     
-  #     - name: Login to Amazon ECR
-  #       id: login-ecr
-  #       uses: aws-actions/amazon-ecr-login@v1
-  #     
-  #     - name: Build, Tag, and Push Image to Amazon ECR
-  #       env:
-  #         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-  #         IMAGE_TAG: ${{ github.sha }}
-  #       run: |
-  #         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-  #         docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
-  #         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-  #         docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
-  #     
-  #     - name: Deploy to EC2
-  #       uses: appleboy/ssh-action@master
-  #       env:
-  #         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-  #         IMAGE_TAG: ${{ github.sha }}
-  #       with:
-  #         host: ${{ secrets.EC2_HOST }}
-  #         username: ${{ secrets.EC2_USERNAME }}
-  #         key: ${{ secrets.EC2_SSH_KEY }}
-  #         envs: ECR_REGISTRY,ECR_REPOSITORY,IMAGE_TAG,AWS_REGION
-  #         script: |
-  #           # Login to ECR
-  #           aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
-  #           
-  #           # Stop and remove old container
-  #           docker stop wine-quality-app || true
-  #           docker rm wine-quality-app || true
-  #           
-  #           # Pull and run new container
-  #           docker pull $ECR_REGISTRY/$ECR_REPOSITORY:latest
-  #           docker run -d \
-  #             --name wine-quality-app \
-  #             -p 80:8000 \
-  #             --restart unless-stopped \
-  #             $ECR_REGISTRY/$ECR_REPOSITORY:latest
-  #           
-  #           # Clean up old images
-  #           docker image prune -af
-  #     
-  #     - name: Verify Deployment
-  #       run: |
-  #         echo "Waiting for application to start..."
-  #         sleep 30
-  #         # Add health check here if needed
-  #         # curl -f http://${{ secrets.EC2_HOST }} || exit 1
-
-  # Uncomment the deploy-ec2 job below if you want to deploy to EC2 instance
-  # First, configure these GitHub secrets: EC2_HOST, EC2_USERNAME, EC2_SSH_KEY
+  # Job 3: Deploy to EC2
+  deploy-ec2:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+      
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+      
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@master
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: latest
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          envs: ECR_REGISTRY,ECR_REPOSITORY,IMAGE_TAG,AWS_REGION
+          script: |
+            # Login to ECR
+            aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
+            
+            # Stop and remove old container
+            docker stop wine-quality-app || true
+            docker rm wine-quality-app || true
+            
+            # Pull and run new container
+            docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+            docker run -d \
+              --name wine-quality-app \
+              -p 8080:8000 \
+              --restart unless-stopped \
+              $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+            
+            # Clean up old images
+            docker image prune -af
+      
+      - name: Verify Deployment
+        run: |
+          echo "✅ Application deployed to EC2!"
+          echo "🌐 Access your app at: http://${{ secrets.EC2_HOST }}"
+          echo "Waiting for application to start..."
+          sleep 10

@@ -14,8 +14,8 @@ permissions:
   contents: read
 
 env:
-  AWS_REGION: us-east-1
-  ECR_REPOSITORY: wine-quality-predictor
+  AWS_REGION: us-east-2  # Changed from us-east-1 to match your ECR region
+  ECR_REPOSITORY: wine-quality-prediction  # Changed from wine-quality-predictor to match your ECR name
   ECS_SERVICE: wine-quality-service
   ECS_CLUSTER: wine-quality-cluster
   ECS_TASK_DEFINITION: wine-quality-task
@@ -65,9 +65,10 @@ jobs:
           # pytest tests/ --cov=src --cov-report=xml
         continue-on-error: true
 
-  # Job 2: Build and Push Docker Image
+  # Job 2: Build and Push Docker Image to ECR
+  # This job builds your Docker image and pushes it to AWS ECR
   build:
-    name: Build Docker Image
+    name: Build and Push to ECR
     runs-on: ubuntu-latest
     needs: test
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
@@ -94,137 +95,96 @@ jobs:
           IMAGE_TAG: ${{ github.sha }}
         run: |
           # Build Docker image
+          echo "Building Docker image..."
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
           
           # Push image to ECR
+          echo "Pushing image to ECR..."
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
           
           echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
-      
-      - name: Download Task Definition
-        run: |
-          aws ecs describe-task-definition \
-            --task-definition ${{ env.ECS_TASK_DEFINITION }} \
-            --query taskDefinition > task-definition.json
-      
-      - name: Fill in the New Image ID in the Amazon ECS Task Definition
-        id: task-def
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
-        with:
-          task-definition: task-definition.json
-          container-name: ${{ env.CONTAINER_NAME }}
-          image: ${{ steps.build-image.outputs.image }}
-      
-      - name: Deploy Amazon ECS Task Definition
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-        with:
-          task-definition: ${{ steps.task-def.outputs.task-definition }}
-          service: ${{ env.ECS_SERVICE }}
-          cluster: ${{ env.ECS_CLUSTER }}
-          wait-for-service-stability: true
+          echo "✅ Image pushed successfully!"
+          echo "📦 Image URI: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
       
       - name: Deployment Success Notification
         if: success()
         run: |
-          echo "✅ Deployment to AWS ECS successful!"
-          echo "Application is now running on AWS"
-      
-      - name: Deployment Failure Notification
-        if: failure()
-        run: |
-          echo "❌ Deployment failed!"
-          echo "Check the logs for more details"
+          echo "✅ Docker image built and pushed to ECR successfully!"
+          echo "🚀 You can now deploy this image manually or set up automated deployment"
 
-  # Job 3: Deploy to EC2 (Alternative to ECS)
-  deploy-ec2:
-    name: Deploy to EC2
-    runs-on: ubuntu-latest
-    needs: test
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
-      
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-      
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
-      
-      - name: Build, Tag, and Push Image to Amazon ECR
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          IMAGE_TAG: ${{ github.sha }}
-        run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
-      
-      - name: Deploy to EC2
-        uses: appleboy/ssh-action@master
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          IMAGE_TAG: ${{ github.sha }}
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          envs: ECR_REGISTRY,ECR_REPOSITORY,IMAGE_TAG,AWS_REGION
-          script: |
-            # Login to ECR
-            aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
-            
-            # Stop and remove old container
-            docker stop wine-quality-app || true
-            docker rm wine-quality-app || true
-            
-            # Pull and run new container
-            docker pull $ECR_REGISTRY/$ECR_REPOSITORY:latest
-            docker run -d \
-              --name wine-quality-app \
-              -p 80:8000 \
-              --restart unless-stopped \
-              $ECR_REGISTRY/$ECR_REPOSITORY:latest
-            
-            # Clean up old images
-            docker image prune -af
-      
-      - name: Verify Deployment
-        run: |
-          echo "Waiting for application to start..."
-          sleep 30
-          # Add health check here if needed
-          # curl -f http://${{ secrets.EC2_HOST }} || exit 1
+  # Job 3: Deploy to EC2 (Alternative to ECS - Enable after AWS setup)
+  # IMPORTANT: Uncomment this job after setting up EC2 instance
+  # Run: .\setup-aws.ps1 and choose option 2 for EC2 deployment
+  # Also configure GitHub secrets: EC2_HOST, EC2_USERNAME, EC2_SSH_KEY
+  
+  # deploy-ec2:
+  #   name: Deploy to EC2
+  #   runs-on: ubuntu-latest
+  #   needs: test
+  #   if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+  #   
+  #   steps:
+  #     - name: Checkout Code
+  #       uses: actions/checkout@v3
+  #     
+  #     - name: Configure AWS Credentials
+  #       uses: aws-actions/configure-aws-credentials@v2
+  #       with:
+  #         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  #         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  #         aws-region: ${{ env.AWS_REGION }}
+  #     
+  #     - name: Login to Amazon ECR
+  #       id: login-ecr
+  #       uses: aws-actions/amazon-ecr-login@v1
+  #     
+  #     - name: Build, Tag, and Push Image to Amazon ECR
+  #       env:
+  #         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+  #         IMAGE_TAG: ${{ github.sha }}
+  #       run: |
+  #         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+  #         docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
+  #         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+  #         docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+  #     
+  #     - name: Deploy to EC2
+  #       uses: appleboy/ssh-action@master
+  #       env:
+  #         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+  #         IMAGE_TAG: ${{ github.sha }}
+  #       with:
+  #         host: ${{ secrets.EC2_HOST }}
+  #         username: ${{ secrets.EC2_USERNAME }}
+  #         key: ${{ secrets.EC2_SSH_KEY }}
+  #         envs: ECR_REGISTRY,ECR_REPOSITORY,IMAGE_TAG,AWS_REGION
+  #         script: |
+  #           # Login to ECR
+  #           aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
+  #           
+  #           # Stop and remove old container
+  #           docker stop wine-quality-app || true
+  #           docker rm wine-quality-app || true
+  #           
+  #           # Pull and run new container
+  #           docker pull $ECR_REGISTRY/$ECR_REPOSITORY:latest
+  #           docker run -d \
+  #             --name wine-quality-app \
+  #             -p 80:8000 \
+  #             --restart unless-stopped \
+  #             $ECR_REGISTRY/$ECR_REPOSITORY:latest
+  #           
+  #           # Clean up old images
+  #           docker image prune -af
+  #     
+  #     - name: Verify Deployment
+  #       run: |
+  #         echo "Waiting for application to start..."
+  #         sleep 30
+  #         # Add health check here if needed
+  #         # curl -f http://${{ secrets.EC2_HOST }} || exit 1
 
-  # Job 4: Notify Deployment Status
-  notify:
-    name: Send Notifications
-    runs-on: ubuntu-latest
-    needs: [build]
-    if: always()
-    
-    steps:
-      - name: Send Success Notification
-        if: needs.build.result == 'success'
-        run: |
-          echo "🎉 Deployment Successful!"
-          echo "Timestamp: $(date)"
-          echo "Commit: ${{ github.sha }}"
-          echo "Author: ${{ github.actor }}"
-      
-      - name: Send Failure Notification
-        if: needs.build.result == 'failure'
-        run: |
-          echo "⚠️ Deployment Failed!"
-          echo "Timestamp: $(date)"
-          echo "Commit: ${{ github.sha }}"
-          echo "Please check the logs"
+  # Uncomment the deploy-ec2 job below if you want to deploy to EC2 instance
+  # First, configure these GitHub secrets: EC2_HOST, EC2_USERNAME, EC2_SSH_KEY
